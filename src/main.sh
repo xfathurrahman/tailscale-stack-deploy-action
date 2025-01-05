@@ -42,4 +42,4 @@ export DOCKER_HOST
 source_env_file "$ENV_FILE"
 
 # Deploy the Docker stack
-docker stack deploy -c "$DOCKER_FILE" --with-registry-auth "$STACK_NAME"
+docker stack deploy -c "$DOCKER_FILE" --with-registry-auth --detach=false "$STACK_NAME"
