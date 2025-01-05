@@ -28,6 +28,10 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
+      - name: Create env file
+        run: |
+          echo "GIT_COMMIT_HASH=${{ github.sha }}" > ./envfile
+
       - name: "Test Local Action"
         id: test
         uses: ./
@@ -36,6 +40,7 @@ jobs:
           docker_port: "2375"
           compose_file: "docker-compose.yaml"
           stack_name: "test-stack"
+          env_file: "./envfile"
 
   lint:
     name: "Lint ✨"
