@@ -64,6 +64,18 @@ then
 tcp        0      0 127.0.0.1:2375          0.0.0.0:*               LISTEN      3758/dockerd
 ```
 
+# Run Docker Engine in swarm mode
+
+```bash
+  docker swarm init
+```
+
+### Configure the advertise address for the swarm
+
+```bash
+  docker swarm init --advertise-addr <MANAGER-IP (your-public-ip or your-private-ip)>
+```
+
 ## Inputs
 
 | Input          | Required | Default               | Description                          |
