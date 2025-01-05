@@ -11,13 +11,12 @@ ENV_FILE="${INPUT_ENV_FILE:-}" # Optional environment file
 # Function to resolve hostname to IP
 resolve_host_to_ip() {
   local host=$1
-  echo "Resolving Tailscale host: $host"
   local ip
   if ! ip=$(getent hosts "$host" | awk '{ print $1 }'); then
-    echo "Unable to resolve hostname $host. Ensure Magic DNS is working."
+    >&2 echo "Unable to resolve hostname $host. Ensure Magic DNS is working."
     exit 1
   fi
-  echo "$ip"
+  echo "$ip"  # Only print the resolved IP
 }
 
 # Function to source environment variables from an optional file
