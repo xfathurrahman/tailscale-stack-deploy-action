@@ -73,3 +73,43 @@ tcp        0      0 127.0.0.1:2375          0.0.0.0:*               LISTEN      
 | compose_file   | false    | docker-compose.yaml   | Docker Compose File                  |
 | stack_name     | true     |                       | Docker Stack Name                    |
 | env_file       | false    |                       | Environment File                     |
+
+## Example usage
+
+```yaml
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-push-image
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Setup Tailscale VPN
+      - name: Setup Tailscale VPN
+        id: tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      # Create env file
+      - name: Create env file
+        run: |
+          echo "GIT_COMMIT_HASH=${{ github.sha }}" > ./envfile
+
+      # Deploy Docker stack
+      - name: Tailscale Docker Stack Deploy
+        uses: xfathurrahman/tailscale-stack-deploy-action@v1.2.0
+        with:
+          tailscale_host: {{ secrets.TS_HOST }} 
+          docker_port: "2375"
+          compose_file: "docker-stack.yaml"
+          stack_name: "stack-name"
+          env_file: "./envfile"
+```
+
+Note: {{ secrets.TS_HOST }} is the tailscale host of the Docker host where the stack will be deployed. Like the tailscale machine hostname or ip address (100.xxx.xxx.xxx).
