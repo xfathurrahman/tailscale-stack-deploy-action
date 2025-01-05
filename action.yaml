@@ -1,0 +1,29 @@
+name: "Tailscale Docker Stack Deploy"
+description: "Deploy a Docker Stack using Tailscale"
+author: "XFathurrahman"
+branding:
+  icon: "layers"
+  color: "green"
+
+inputs:
+  tailscale_host:
+    description: "Tailscale host of the Docker host"
+    required: true
+  docker_port:
+    description: "Docker daemon port"
+    default: "2375"
+    required: false
+  compose_file:
+    description: "Docker Compose File"
+    default: "docker-compose.yaml"
+    required: false
+  stack_name:
+    description: "Docker Stack Name"
+    required: true
+  env_file:
+    description: "Environment File"
+    required: false
+
+runs:
+  using: "docker"
+  image: "Dockerfile"

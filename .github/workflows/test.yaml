@@ -1,0 +1,52 @@
+name: "Test"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "Test 🧪"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Write YAML"
+        id: yaml-action
+        uses: teunmooij/yaml@v1
+        with:
+          data: '{"version":"3.8","services":{"alpine":{"image":"alpine","command":"tail -f /dev/null"}}}'
+          to-file: "docker-compose.yaml"
+
+      - name: Setup Tailscale VPN
+        id: tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: "Test Local Action"
+        id: test
+        uses: ./
+        with:
+          tailscale_host:  ${{ secrets.TS_HOST }}
+          docker_port: "2375"
+          compose_file: "docker-compose.yaml"
+          stack_name: "test-stack"
+
+  lint:
+    name: "Lint ✨"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "ShellCheck"
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: src
