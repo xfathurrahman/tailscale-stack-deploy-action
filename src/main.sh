@@ -7,6 +7,7 @@ DOCKER_PORT="${INPUT_DOCKER_PORT:-2375}" # Default Docker port
 DOCKER_FILE="${INPUT_COMPOSE_FILE:-docker-compose.yaml}" # Stack definition file
 STACK_NAME="${INPUT_STACK_NAME}" # Name of the Docker stack
 ENV_FILE="${INPUT_ENV_FILE:-}" # Optional environment file
+CUSTOM_COMMAND="${INPUT_CUSTOM_COMMAND:-}" # Custom command options
 
 # Function to resolve hostname to IP
 resolve_host_to_ip() {
@@ -42,4 +43,4 @@ export DOCKER_HOST
 source_env_file "$ENV_FILE"
 
 # Deploy the Docker stack
-docker stack deploy -c "$DOCKER_FILE" --with-registry-auth --detach=false "$STACK_NAME"
+docker stack deploy -c "$DOCKER_FILE" "$CUSTOM_COMMAND" "$STACK_NAME"

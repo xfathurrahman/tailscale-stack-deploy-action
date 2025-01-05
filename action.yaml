@@ -23,6 +23,10 @@ inputs:
   env_file:
     description: "Environment File"
     required: false
+  custom_command:
+    description: "Custom command options for docker stack deploy"
+    required: false
+    default: ""
 
 runs:
   using: "docker"

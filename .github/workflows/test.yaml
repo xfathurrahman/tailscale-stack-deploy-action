@@ -1,4 +1,11 @@
-name: "Test"
+name: "Test Workflow"
+
+env:
+  UBUNTU_VERSION: "ubuntu-22.04"
+  CHECKOUT_ACTION: "actions/checkout@v4"
+  TAILSCALE_ACTION: "tailscale/github-action@v3"
+  YAML_ACTION: "teunmooij/yaml@v1"
+  SHELLCHECK_ACTION: "ludeeus/action-shellcheck@master"
 
 on:
   workflow_dispatch:
@@ -6,34 +13,32 @@ on:
 jobs:
   test:
     name: "Test 🧪"
-    runs-on: ubuntu-24.04
+    runs-on: ${{ env.UBUNTU_VERSION }}
     timeout-minutes: 5
-
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v4
+      - name: "Checkout Repository"
+        uses: ${{ env.CHECKOUT_ACTION }}
 
-      - name: "Write YAML"
+      - name: "Write Docker Compose YAML"
         id: yaml-action
-        uses: teunmooij/yaml@v1
+        uses: ${{ env.YAML_ACTION }}
         with:
           data: '{"version":"3.8","services":{"alpine":{"image":"alpine","command":"tail -f /dev/null"}}}'
           to-file: "docker-compose.yaml"
 
-      - name: Setup Tailscale VPN
-        id: tailscale
-        uses: tailscale/github-action@v3
+      - name: "Setup Tailscale VPN"
+        id: setup-tailscale
+        uses: ${{ env.TAILSCALE_ACTION }}
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
-      - name: Create env file
-        run: |
-          echo "GIT_COMMIT_HASH=${{ github.sha }}" > ./envfile
+      - name: "Create .env File"
+        run: echo "GIT_COMMIT_HASH=${{ github.sha }}" > ./envfile
 
       - name: "Test Local Action"
-        id: test
+        id: test-local
         uses: ./
         with:
           tailscale_host:  ${{ secrets.TS_HOST }}
@@ -41,17 +46,17 @@ jobs:
           compose_file: "docker-compose.yaml"
           stack_name: "test-stack"
           env_file: "./envfile"
+          custom_command: "--detach=false"
 
   lint:
     name: "Lint ✨"
-    runs-on: ubuntu-24.04
+    runs-on: ${{ env.UBUNTU_VERSION }}
     timeout-minutes: 5
-
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v4
+      - name: "Checkout Repository"
+        uses: ${{ env.CHECKOUT_ACTION }}
 
-      - name: "ShellCheck"
-        uses: ludeeus/action-shellcheck@master
+      - name: "Lint Shell Scripts"
+        uses: ${{ env.SHELLCHECK_ACTION }}
         with:
           scandir: src
