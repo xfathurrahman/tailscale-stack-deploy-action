@@ -82,7 +82,7 @@ This simple action deploys a Docker stack to a remote Docker host using the Tail
 ```yaml
 steps:
   - name: Deploy Docker Stack
-    uses: path-to-repo/tailscale-docker-stack-deploy@v1
+    uses: xfathurrahman/tailscale-docker-stack-deploy@v1.4.0
     with:
       tailscale_host: ${{ secrets.TS_HOST }}
       stack_name: my_docker_stack
