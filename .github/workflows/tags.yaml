@@ -14,4 +14,4 @@ jobs:
       - name: "Update Tags"
         uses: cssnr/update-version-tags-action@v1
         with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
