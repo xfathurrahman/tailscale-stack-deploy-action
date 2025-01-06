@@ -2,12 +2,13 @@
 set -e
 
 # Input parameters
-TAILSCALE_HOST="${INPUT_TAILSCALE_HOST}"  # Tailscale host to resolve
-DOCKER_PORT="${INPUT_DOCKER_PORT:-2375}" # Default Docker port
-DOCKER_FILE="${INPUT_COMPOSE_FILE:-docker-compose.yaml}" # Stack definition file
-STACK_NAME="${INPUT_STACK_NAME}" # Name of the Docker stack
-ENV_FILE="${INPUT_ENV_FILE:-}" # Optional environment file
-CUSTOM_COMMAND="${INPUT_CUSTOM_COMMAND:-}" # Custom command options
+TAILSCALE_HOST="${INPUT_TAILSCALE_HOST}"
+DOCKER_PORT="${INPUT_DOCKER_PORT:-2375}"
+DOCKER_FILE="${INPUT_COMPOSE_FILE:-docker-compose.yaml}"
+STACK_NAME="${INPUT_STACK_NAME}"
+ENV_FILE="${INPUT_ENV_FILE:-}"
+CUSTOM_FLAGS="${INPUT_CUSTOM_FLAGS:-}"
+GITHUB_TOKEN="${INPUT_GITHUB_TOKEN:-}"
 
 # Function to resolve hostname to IP
 resolve_host_to_ip() {
@@ -17,7 +18,7 @@ resolve_host_to_ip() {
     >&2 echo "Unable to resolve hostname $host. Ensure Magic DNS is working."
     exit 1
   fi
-  echo "$ip"  # Only print the resolved IP
+  echo "$ip"
 }
 
 # Function to source environment variables from an optional file
@@ -42,5 +43,17 @@ export DOCKER_HOST
 # Source environment variables if an env file is specified
 source_env_file "$ENV_FILE"
 
+# Authenticate with GitHub Container Registry if token is provided
+if [ -n "$GITHUB_TOKEN" ]; then
+  echo "Authenticating with GitHub Container Registry"
+  echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+fi
+
 # Deploy the Docker stack
-docker stack deploy -c "$DOCKER_FILE" "$CUSTOM_COMMAND" "$STACK_NAME"
+docker stack deploy -c "$DOCKER_FILE" "$STACK_NAME" --detach=false "$CUSTOM_FLAGS"
+
+# Logout from GitHub Container Registry if we logged in
+if [ -n "$GITHUB_TOKEN" ]; then
+  echo "Logging out from GitHub Container Registry"
+  docker logout ghcr.io
+fi

@@ -23,10 +23,13 @@ inputs:
   env_file:
     description: "Environment File"
     required: false
-  custom_command:
-    description: "Custom command options for docker stack deploy"
+  custom_flags:
+    description: "Custom flags for docker stack deploy"
     required: false
     default: ""
+  github_token:
+    description: "GitHub token for authentication with GitHub Container Registry"
+    required: false
 
 runs:
   using: "docker"

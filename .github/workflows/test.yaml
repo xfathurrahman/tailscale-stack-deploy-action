@@ -41,7 +41,6 @@ jobs:
           compose_file: "docker-compose.yaml"
           stack_name: "test-stack"
           env_file: "./envfile"
-          custom_command: "--detach=false"
 
   lint:
     name: "Lint ✨"
