@@ -41,6 +41,7 @@ jobs:
           compose_file: "docker-compose.yaml"
           stack_name: "test-stack"
           env_file: "./envfile"
+          custom_flags: "--with-registry-auth"
 
   lint:
     name: "Lint ✨"

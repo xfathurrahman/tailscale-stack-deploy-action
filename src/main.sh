@@ -50,7 +50,7 @@ if [ -n "$GITHUB_TOKEN" ]; then
 fi
 
 # Deploy the Docker stack
-docker stack deploy -c "$DOCKER_FILE" "$STACK_NAME" --detach=false "$CUSTOM_FLAGS"
+docker stack deploy -c "$DOCKER_FILE" "$STACK_NAME" "$CUSTOM_FLAGS" --detach=false
 
 # Logout from GitHub Container Registry if we logged in
 if [ -n "$GITHUB_TOKEN" ]; then
