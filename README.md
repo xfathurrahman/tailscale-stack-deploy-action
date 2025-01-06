@@ -80,15 +80,74 @@ This simple action deploys a Docker stack to a remote Docker host using the Tail
 ## Example Usage
 
 ```yaml
-steps:
-  - name: Deploy Docker Stack
-    uses: xfathurrahman/tailscale-docker-stack-deploy@v1.4.0
-    with:
-      tailscale_host: ${{ secrets.TS_HOST }}
-      stack_name: my_docker_stack
-      github_token: ${{ secrets.GITHUB_TOKEN }}
-      compose_file: docker-compose.override.yaml
-      custom_flags: "--with-registry-auth"
+name: Build & Deploy
+on:
+   push:
+      branches:
+         - main
+   workflow_dispatch:
+
+permissions:
+   contents: read
+   packages: write
+   id-token: write
+
+env:
+   DOCKER_REGISTRY: ghcr.io
+   DOCKER_PORT: 2375
+   DOCKER_STACK_COMPOSE_FILE: ./docker-stack.yaml
+   STACK_NAME: my-stack
+   SSH_USER: fathur
+
+jobs:
+   build-and-deploy:
+      name: Build and Deploy Portal Page
+      runs-on: ubuntu-22.04
+      steps:
+         - name: Checkout Code
+           uses: actions/checkout@v4
+
+         - name: Set up Docker Buildx
+           uses: docker/setup-buildx-action@v3
+
+         - name: Login to GitHub Container Registry
+           uses: docker/login-action@v3
+           with:
+              registry: ${{ env.DOCKER_REGISTRY }}
+              username: ${{ github.actor }}
+              password: ${{ secrets.GITHUB_TOKEN }}
+
+         - name: Build and Push Docker Image
+           uses: docker/build-push-action@v6
+           with:
+              context: ./portal-page
+              push: true
+              tags: |
+                 ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/my-image:latest
+                 ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/my-imagee:${{ github.sha }}
+              cache-from: type=gha
+              cache-to: type=gha,mode=max
+
+         - name: Create Environment File
+           run: echo "GIT_COMMIT_HASH=${{ github.sha }}" > .env
+
+         - name: Setup Tailscale
+           uses: tailscale/github-action@v3
+           with:
+              oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+              oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+              tags: tag:ci
+
+         - name: Deploy Docker Stack via Tailscale
+           uses: xfathurrahman/tailscale-stack-deploy-action@v1.4.0
+           with:
+              tailscale_host: ${{ secrets.TS_HOST }}
+              docker_port: ${{ env.DOCKER_PORT }}
+              compose_file: ${{ env.DOCKER_STACK_COMPOSE_FILE }}
+              custom_flags: --with-registry-auth
+              stack_name: ${{ env.STACK_NAME }}
+              github_token: ${{ secrets.GITHUB_TOKEN }}
+              env_file: .env
 ```
 
 - `${{ secrets.TS_HOST }}`: The Tailscale host of the Docker host where the stack will be deployed (e.g., the Tailscale machine hostname or IP address like `100.xxx.xxx.xxx`).
