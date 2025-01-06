@@ -14,7 +14,7 @@ This simple action deploys a Docker stack to a remote Docker host using the Tail
      "hosts": ["unix:///var/run/docker.sock", "tcp://<your-100.xxx.ip>:2375"]
    }
    ```
-   > **Note**: You can also use the `0.0.0.0` IP address to bind to all interfaces or the Tailscale IP range. Read more about it [here](https://docs.docker.com/engine/daemon/remote-access/).
+   > **Note**: You can also use the `0.0.0.0` IP address to bind to all interfaces or the Tailscale IP. Read more about it [here](https://docs.docker.com/engine/daemon/remote-access/).
 
 2. Edit the `docker.service` file:
    ```bash
