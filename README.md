@@ -1,80 +1,69 @@
 # Tailscale Docker Stack Deploy Action
 
-This simple action deploys a Docker stack to a remote Docker host using Tailscale VPN.
+This simple action deploys a Docker stack to a remote Docker host using the Tailscale VPN.
 
-# Configure remote access for Docker daemon
+## Configure Remote Access for Docker Daemon
 
-Adding the docker daemon.json file :
-```bash
-  sudo nano /etc/docker/daemon.json
-```
+1. Adding the `daemon.json` file:
+   ```bash
+   sudo nano /etc/docker/daemon.json
+   ```
+   Add the following configuration to the file:
+   ```json
+   {
+     "hosts": ["unix:///var/run/docker.sock", "tcp://<your-100.xxx.ip>:2375"]
+   }
+   ```
+   > **Note**: You can also use the `0.0.0.0` IP address to bind to all interfaces or the Tailscale IP range. Read more about it [here](https://docs.docker.com/engine/daemon/remote-access/).
 
-Add the following config to the file :
-```json
-{
-  "hosts": ["unix:///var/run/docker.sock", "tcp://<your-100.xxx.ip>:2375"]
-}
-```
+2. Edit the `docker.service` file:
+   ```bash
+   sudo nano /usr/lib/systemd/system/docker.service
+   ```
+   Replace the `-H fd://` from the `ExecStart` line:
+   ```shell
+   /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   ```
+   with:
+   ```shell
+   /usr/bin/dockerd --containerd=/run/containerd/containerd.sock
+   ```
 
-#### Note: U can also use the 0.0.0.0 ip address to bind to all interfaces or tailscale ip range. Read more about it [here](https://docs.docker.com/engine/daemon/remote-access/)
+3. Reload the `systemctl` configuration:
+   ```bash
+   sudo systemctl daemon-reload
+   ```
 
-Edit the docker.service file :
+4. Restart the Docker service:
+   ```bash
+   sudo systemctl restart docker.service
+   ```
 
-```bash
-  sudo nano /usr/lib/systemd/system/docker.service
-```
+5. Verify that the changes have been applied:
+   Install `netstat` if it's not already installed:
+   ```bash
+   sudo apt install net-tools
+   ```
+   Then check:
+   ```bash
+   sudo netstat -lntp | grep dockerd
+   ```
+   Example output:
+   ```
+   tcp        0      0 127.0.0.1:2375          0.0.0.0:*               LISTEN      3758/dockerd
+   ```
 
-remove the -H fd:// from the ExecStart line
+## Set Up Docker Engine in Swarm Mode
 
-```
-/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
-```
+1. Initialize swarm mode:
+   ```bash
+   docker swarm init
+   ```
 
-to
-
-```
-/usr/bin/dockerd --containerd=/run/containerd/containerd.sock
-```
-
-### Reload the systemctl configuration.
-
-```bash
-  sudo systemctl daemon-reload
-```
-
-### Restart the Docker service.
-
-```bash
-  sudo systemctl restart docker.service
-```
-
-### Verify that the change has gone through.
-
-install netstat if not installed :
-```bash
-  sudo apt install net-tools
-```
-
-then
-    
-```bash
-  sudo netstat -lntp | grep dockerd
-```
-```
-tcp        0      0 127.0.0.1:2375          0.0.0.0:*               LISTEN      3758/dockerd
-```
-
-# Run Docker Engine in swarm mode
-
-```bash
-  docker swarm init
-```
-
-### Configure the advertise address for the swarm
-
-```bash
-  docker swarm init --advertise-addr <MANAGER-IP (your-public-ip or your-private-ip)>
-```
+2. Configure the advertise address:
+   ```bash
+   docker swarm init --advertise-addr <MANAGER-IP (your-public-ip or your-private-ip)>
+   ```
 
 ## Inputs
 
@@ -82,46 +71,33 @@ tcp        0      0 127.0.0.1:2375          0.0.0.0:*               LISTEN      
 |----------------|----------|-----------------------|--------------------------------------|
 | tailscale_host | true     |                       | Tailscale host of the Docker host    |
 | docker_port    | false    | 2375                  | Docker daemon port                   |
-| compose_file   | false    | docker-compose.yaml   | Docker Compose File                  |
-| stack_name     | true     |                       | Docker Stack Name                    |
-| env_file       | false    |                       | Environment File                     |
+| compose_file   | false    | docker-compose.yaml   | Docker Compose file                  |
+| stack_name     | true     |                       | Docker stack name                    |
+| env_file       | false    |                       | Environment file                     |
+| custom_flags   | false    |                       | Custom flags for `docker stack deploy` |
+| github_token   | false    |                       | GitHub token for authentication with GitHub Container Registry |
 
-## Example usage
+## Example Usage
 
 ```yaml
-  deploy:
-    runs-on: ubuntu-latest
-    needs:
-      - build-and-push-image
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Setup Tailscale VPN
-      - name: Setup Tailscale VPN
-        id: tailscale
-        uses: tailscale/github-action@v2
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      # Create env file
-      - name: Create env file
-        run: |
-          echo "GIT_COMMIT_HASH=${{ github.sha }}" > ./envfile
-
-      # Deploy Docker stack
-      - name: Tailscale Docker Stack Deploy
-        uses: xfathurrahman/tailscale-stack-deploy-action@v1.2.0
-        with:
-          tailscale_host: {{ secrets.TS_HOST }} 
-          docker_port: "2375"
-          compose_file: "docker-stack.yaml"
-          stack_name: "stack-name"
-          env_file: "./envfile"
+steps:
+  - name: Deploy Docker Stack
+    uses: path-to-repo/tailscale-docker-stack-deploy@v1
+    with:
+      tailscale_host: ${{ secrets.TS_HOST }}
+      stack_name: my_docker_stack
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      compose_file: docker-compose.override.yaml
+      custom_flags: "--with-registry-auth"
 ```
 
-Note: {{ secrets.TS_HOST }} is the tailscale host of the Docker host where the stack will be deployed. Like the tailscale machine hostname or ip address (100.xxx.xxx.xxx).
+- `${{ secrets.TS_HOST }}`: The Tailscale host of the Docker host where the stack will be deployed (e.g., the Tailscale machine hostname or IP address like `100.xxx.xxx.xxx`).
+- `${{ secrets.GITHUB_TOKEN }}`: Required when using a private image from GitHub Container Registry.
+
+## Notes
+
+The optional `custom_flags` input can be used to pass additional options to the `docker stack deploy` command. For example:
+- `--with-registry-auth`: Use registry authentication credentials.
+- `--prune`: Apply changes and remove services that are no longer defined.
+
+Ensure that your Docker host is correctly configured for remote access before using this action.
